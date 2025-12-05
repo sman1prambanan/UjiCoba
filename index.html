@@ -1,0 +1,282 @@
+<head>
+<meta charset="UTF-8">
+<title>Pendataan Promnight</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+<style>
+/* BODY FULL SCREEN */
+body {
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(135deg, #1e1f26, #3f3351, #864879);
+    background-size: 400% 400%;
+    animation: gradientMove 12s ease infinite;
+    margin: 0;
+    padding: 0;
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+@keyframes gradientMove {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.container {
+    width: 100%;
+    max-width: 450px;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(12px);
+    padding: 25px;
+    border-radius: 15px;
+    animation: fadeIn .8s ease;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    display: flex;
+    flex-direction: column;
+    max-height: 95vh;
+    overflow-y: auto;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+h2, h3 {
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+input {
+    width: 100%;
+    padding: 14px;
+    border-radius: 10px;
+    border: none;
+    margin-top: 10px;
+    outline: none;
+    font-size: 16px;
+    background: rgba(255,255,255,0.9);
+}
+
+button {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 10px;
+    margin-top: 15px;
+    cursor: pointer;
+    font-size: 16px;
+    color: #fff;
+    font-weight: 600;
+    transition: .3s ease;
+    background: #ff8fa3;
+}
+
+button:hover {
+    background: #ff6f91;
+    transform: translateY(-2px);
+}
+
+#step3 button:first-child { background: #7fd18b; }
+#step3 button:last-child { background: #d46a6a; }
+
+.hidden { display: none; }
+
+#loading {
+    text-align:center; 
+    margin-top:20px;
+}
+
+@media screen and (max-width: 480px) {
+    body {
+        font-size: 18px;
+        padding: 0;
+    }
+
+    .container {
+        padding: 25px;
+        border-radius: 15px;
+    }
+
+    h2 { font-size: 26px; }
+    h3 { font-size: 22px; }
+
+    input,
+    button,
+    #step3 button:first-child,
+    #step3 button:last-child {
+        font-size: 18px;
+        padding: 16px;
+    }
+
+    #loading p,
+    #step2 p span,
+    #done p {
+        font-size: 18px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+    <h2>Pendataan Promnight</h2>
+
+    <div id="step1">
+        <label>Masukkan NIS:</label>
+        <input type="text" id="nis" placeholder="Masukan NIS">
+        <button onclick="checkNIS()">Cek NIS</button>
+    </div>
+
+    <div id="step2" class="hidden">
+        <h3>Data Ditemukan</h3>
+        <p><strong>Nama:</strong> <span id="nama"></span></p>
+        <p><strong>Kelas:</strong> <span id="kelas"></span></p>
+        <button onclick="gotoStep3()">Lanjutkan</button>
+    </div>
+
+    <div id="step3" class="hidden">
+        <h3>Konfirmasi Kehadiran</h3>
+        <button onclick="submitData('Mengikuti')">Saya Mengikuti</button>
+        <button onclick="submitData('Tidak Mengikuti')">Tidak Mengikuti</button>
+    </div>
+
+    <div id="done" class="hidden">
+        <h3>Terima Kasih!</h3>
+        <p>Data Anda berhasil dikirim 🎉</p>
+    </div>
+
+    <div id="loading" class="hidden">
+        <lottie-player 
+            src="https://assets10.lottiefiles.com/packages/lf20_usmfx6bp.json"
+            background="transparent"
+            speed="1"
+            style="width:100px; height:100px; margin:auto;"
+            loop
+            autoplay>
+        </lottie-player>
+        <p>Memproses...</p>
+    </div>
+</div>
+
+<script>
+const scriptURL = "https://script.google.com/macros/s/AKfycbwAkPGaCd698pOd2tQI_N8oD8PC_l_U90_haln7Gvm8Zzkvwt3gu9Nyu88ESCzuclYVWw/exec";
+let globalData = {};
+
+function showLoading(b) {
+    document.getElementById("loading").classList[b ? "remove" : "add"]("hidden");
+}
+
+function lottieAlert(title, msg, animURL) {
+    Swal.fire({
+        title,
+        html: `
+            <lottie-player src="${animURL}" background="transparent" speed="1"
+            style="width: 150px; height: 150px; margin:auto;" autoplay></lottie-player>
+            <p style="margin-top:10px;">${msg}</p>
+        `,
+        confirmButtonText: "OK",
+        width: 350
+    });
+}
+
+function checkNIS() {
+    const nis = document.getElementById("nis").value;
+    if (!nis) return lottieAlert("NIS Kosong!", "Masukkan NIS terlebih dahulu.", "https://assets10.lottiefiles.com/packages/lf20_t24tpvcu.json");
+
+    showLoading(true);
+
+    fetch(scriptURL, {
+        method: "POST",
+        body: JSON.stringify({ action: "checkNIS", nis })
+    })
+    .then(r => r.json())
+    .then(d => {
+        showLoading(false);
+
+        if (d.status === "valid") {
+            globalData = d;
+            lottieAlert("Data Ditemukan!", "Silakan lanjutkan.", "https://assets2.lottiefiles.com/packages/lf20_jbrw3hcz.json");
+            document.getElementById("step1").classList.add("hidden");
+            document.getElementById("step2").classList.remove("hidden");
+            document.getElementById("nama").innerText = d.nama;
+            document.getElementById("kelas").innerText = d.kelas;
+        } else {
+            lottieAlert("NIS Tidak Terdaftar!", "Periksa kembali NIS Anda.", "https://assets9.lottiefiles.com/packages/lf20_qp1q7mct.json");
+        }
+    });
+}
+
+function gotoStep3() {
+    document.getElementById("step2").classList.add("hidden");
+    document.getElementById("step3").classList.remove("hidden");
+}
+
+function submitData(status) {
+    Swal.fire({
+        title: "Apakah Anda yakin?",
+        html: `
+            <lottie-player src="https://assets2.lottiefiles.com/packages/lf20_jbrw3hcz.json"
+            background="transparent" speed="1"
+            style="width: 150px; height: 150px; margin:auto;" autoplay></lottie-player>
+            <p style="margin-top:10px;">Anda memilih: <strong>${status}</strong></p>
+        `,
+        showCancelButton: true,
+        confirmButtonText: "Ya, Kirim!"
+    }).then(x => {
+        if (!x.isConfirmed) return;
+
+        showLoading(true);
+
+        fetch(scriptURL, {
+            method: "POST",
+            body: JSON.stringify({
+                action: "submitData",
+                nis: document.getElementById("nis").value,
+                nama: globalData.nama,
+                kelas: globalData.kelas,
+                mengikuti: status
+            })
+        })
+        .then(r => r.json())
+        .then(d => {
+            showLoading(false);
+
+            if (d.status === "success") {
+                confetti({ particleCount: 180, spread: 70, origin: { y: 0.6 } });
+
+                Swal.fire({
+                    title: "Berhasil!",
+                    html: `
+                        <lottie-player src="https://assets9.lottiefiles.com/packages/lf20_qp1q7mct.json"
+                        background="transparent" speed="1"
+                        style="width: 150px; height: 150px; margin:auto;" autoplay></lottie-player>
+                        <p style="margin-top:10px;">Data berhasil dikirim!</p>
+                    `,
+                    confirmButtonText: "OK"
+                });
+
+                document.getElementById("step3").classList.add("hidden");
+                document.getElementById("done").classList.remove("hidden");
+
+            } else {
+                lottieAlert("Gagal!", "Anda sudah mengirim sebelumnya.", "https://assets9.lottiefiles.com/packages/lf20_qp1q7mct.json");
+            }
+        });
+    });
+}
+</script>
+
+</body>
+</html>
